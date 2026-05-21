@@ -474,8 +474,8 @@ function spawnObs() {
 
 function spawnCol() {
   const r = Math.random();
-  // star 83.5%, heart 5.5%, coffee 11%  (heart = half as frequent as coffee)
-  const type = r < 0.835 ? 'star' : r < 0.89 ? 'heart' : 'coffee';
+  // star 61.5%, heart 5.5%, coffee 33%  (coffee tripled from original 11%)
+  const type = r < 0.615 ? 'star' : r < 0.67 ? 'heart' : 'coffee';
   collectibles.push({ type, x: 50 + Math.random() * (W-100), y: -35, bob: Math.random()*Math.PI*2, alive: true });
 }
 
