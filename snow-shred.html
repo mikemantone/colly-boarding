@@ -1065,7 +1065,7 @@ function gameLoop() {
   frameCount++; bgScroll += speed;
 
   // Speed ramp-up (slow and gradual)
-  if (frameCount % 420 === 0) speed = Math.min(9, speed + 0.12);
+  if (frameCount % 420 === 0) speed += 0.12;
 
   // Target player X from slider
   const tX = 44 + sliderPct * (W - 88);
@@ -1166,12 +1166,12 @@ function gameLoop() {
         burst(c.x,c.y,'#FFD700',12);
         sfxStar();
       } else if (c.type==='heart') {
-        lives=Math.min(6,lives+1);
+        lives=Math.min(3,lives+1);
         burst(c.x,c.y,'#FF69B4',10);
         sfxStar();
       } else if (c.type==='coffee') {
         // Speed boost +10% and weeehoooo!
-        speed = Math.min(11, speed * 1.10);
+        speed = speed * 1.15;
         burst(c.x,c.y,'#c8860a',14);
         sfxWeehoo();
       }
