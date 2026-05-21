@@ -315,6 +315,42 @@ function sfxOwwie() {
   o.start(now); o.stop(now + 0.39);
 }
 
+function sfxWeehoo() {
+  if (!AC) return;
+  const now = AC.currentTime;
+  // "weeehoooo" — rises quickly, sustains high with vibrato, then swoops down with a whoop
+  const o = AC.createOscillator(); o.type = 'sine';
+  const g = AC.createGain();
+  o.connect(g); g.connect(AC.destination);
+  // pitch: shoot up, hold, then big swoop down
+  o.frequency.setValueAtTime(320, now);
+  o.frequency.exponentialRampToValueAtTime(900, now + 0.1);
+  o.frequency.setValueAtTime(900, now + 0.1);
+  o.frequency.exponentialRampToValueAtTime(880, now + 0.45);
+  o.frequency.exponentialRampToValueAtTime(380, now + 0.75);
+  o.frequency.exponentialRampToValueAtTime(260, now + 0.95);
+  // vibrato on the sustained part
+  const vib = AC.createOscillator(); vib.frequency.value = 10;
+  const vibG = AC.createGain(); vibG.gain.value = 55;
+  vib.connect(vibG); vibG.connect(o.frequency);
+  vib.start(now + 0.1); vib.stop(now + 0.96);
+  // volume envelope
+  g.gain.setValueAtTime(0.65, now);
+  g.gain.setValueAtTime(0.65, now + 0.7);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.96);
+  o.start(now); o.stop(now + 0.97);
+  // second harmonic layer for richness
+  const o2 = AC.createOscillator(); o2.type = 'sine';
+  const g2 = AC.createGain();
+  o2.connect(g2); g2.connect(AC.destination);
+  o2.frequency.setValueAtTime(640, now);
+  o2.frequency.exponentialRampToValueAtTime(1800, now + 0.1);
+  o2.frequency.exponentialRampToValueAtTime(760, now + 0.95);
+  g2.gain.setValueAtTime(0.22, now);
+  g2.gain.exponentialRampToValueAtTime(0.001, now + 0.96);
+  o2.start(now); o2.stop(now + 0.97);
+}
+
 function sfxStar() {
   if (!AC) return;
   const now = AC.currentTime;
@@ -384,7 +420,7 @@ let animId = null;
 //  INIT
 // ─────────────────────────────────────────────
 function initGame() {
-  score = 0; lives = 3; speed = 3.2; frameCount = 0;
+  score = 0; lives = 1; speed = 3.2; frameCount = 0;
   invincible = 0; combo = 0; bgScroll = 0;
   nextObs = 80; nextCol = 40; nextRamp = 160;
   obstacles = []; collectibles = []; ramps = []; particles = [];
@@ -437,7 +473,9 @@ function spawnObs() {
 }
 
 function spawnCol() {
-  const type = Math.random() < 0.78 ? 'star' : 'heart';
+  const r = Math.random();
+  // star 83.5%, heart 5.5%, coffee 11%  (heart = half as frequent as coffee)
+  const type = r < 0.835 ? 'star' : r < 0.89 ? 'heart' : 'coffee';
   collectibles.push({ type, x: 50 + Math.random() * (W-100), y: -35, bob: Math.random()*Math.PI*2, alive: true });
 }
 
@@ -858,9 +896,60 @@ function drawCollectible(c) {
       ctx.beginPath(); ctx.arc(sx,sy,2.5,0,Math.PI*2); ctx.fill();
     });
     ctx.globalAlpha=1;
-  } else {
+  } else if (c.type === 'heart') {
     ctx.shadowColor='#FF69B4'; ctx.shadowBlur=14;
     heartShape(0,0,14);
+    ctx.shadowBlur=0;
+  } else if (c.type === 'coffee') {
+    ctx.shadowColor='#c8860a'; ctx.shadowBlur=14;
+    // --- to-go coffee cup ---
+    // Cup body (slight trapezoid: wider at top, narrower at bottom)
+    ctx.fillStyle='#f5e6c8';
+    ctx.beginPath();
+    ctx.moveTo(-11, -14);  // top-left
+    ctx.lineTo( 11, -14);  // top-right
+    ctx.lineTo(  8,  14);  // bottom-right
+    ctx.lineTo( -8,  14);  // bottom-left
+    ctx.closePath(); ctx.fill();
+    // Sleeve / grip band
+    ctx.fillStyle='#8B4513';
+    ctx.beginPath();
+    ctx.moveTo(-11,  -2);
+    ctx.lineTo( 11,  -2);
+    ctx.lineTo( 9.5,  6);
+    ctx.lineTo(-9.5,  6);
+    ctx.closePath(); ctx.fill();
+    // Sleeve highlight stripe
+    ctx.fillStyle='rgba(255,220,150,0.35)';
+    ctx.fillRect(-10, -0.5, 20, 2);
+    // Cup body shading on right
+    ctx.fillStyle='rgba(180,140,80,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(6, -14); ctx.lineTo(11, -14); ctx.lineTo(8, 14); ctx.lineTo(5, 14);
+    ctx.closePath(); ctx.fill();
+    // Lid
+    ctx.fillStyle='#5c3317';
+    ctx.beginPath(); ctx.roundRect(-12, -18, 24, 6, 3); ctx.fill();
+    // Lid highlight
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.fillRect(-10, -17, 20, 2);
+    // Drink hole on lid
+    ctx.fillStyle='#3b1f0a';
+    ctx.beginPath(); ctx.roundRect(-4, -17, 8, 4, 2); ctx.fill();
+    // Steam lines (animated)
+    const steamOff = Math.sin(c.bob * 2) * 2;
+    ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=1.5;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(-4, -20); ctx.bezierCurveTo(-6+steamOff, -24, -2+steamOff, -27, -4+steamOff, -31);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo( 4, -20); ctx.bezierCurveTo( 6-steamOff, -24,  2-steamOff, -27,  4-steamOff, -31);
+    ctx.stroke();
+    // Brand text on cup
+    ctx.fillStyle='rgba(139,69,19,0.7)';
+    ctx.font='bold 6px Arial'; ctx.textAlign='center';
+    ctx.fillText('☕', 0, 10);
     ctx.shadowBlur=0;
   }
   ctx.restore();
@@ -1075,11 +1164,17 @@ function gameLoop() {
       if (c.type==='star') {
         combo++; score+=10*Math.max(1,combo);
         burst(c.x,c.y,'#FFD700',12);
-      } else {
+        sfxStar();
+      } else if (c.type==='heart') {
         lives=Math.min(6,lives+1);
         burst(c.x,c.y,'#FF69B4',10);
+        sfxStar();
+      } else if (c.type==='coffee') {
+        // Speed boost +10% and weeehoooo!
+        speed = Math.min(11, speed * 1.10);
+        burst(c.x,c.y,'#c8860a',14);
+        sfxWeehoo();
       }
-      sfxStar();
       updateHUD();
     }
   });
